@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <sys/select.h>
 #include <termios.h>
-#include <stropts.h>
+#include <time.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 
 int kbhit();
@@ -26,13 +27,13 @@ main ()
 	float betas[prob_buff];
 	for (int i = 0; i <= prob_buff; ++i)
 	{
-		betas[i] = 1./(0.6 - 0.59*i/(float)prob_buff);
+		betas[i] = 0.5/(0.6 - 0.5*i/(float)prob_buff);
 	}
 
 	// Load system and calculate
 	ising_init();
 	system_t mysys = ising_new();
-	ising_configure(&mysys, initial, 0);
+	ising_configure(&mysys, initial, 0.0);
 	ising_configure_betas(&mysys, prob_buff, betas);
 	ising_enqueue(&mysys);
 	ising_get_data(&mysys, mag_data);
@@ -47,25 +48,29 @@ main ()
 
 		// Print states
 		printf("┌");
-		for(int i = 0; i < 2*sizeX/2+2; i++) printf("─");
+		for(int i = 0; i < 2*sizeX/OVERSAMPLE+2; i++) printf("─");
 		printf("┐\n");
 
-		for (int i = 0; i < sizeY/2; ++i)
+		for (int i = 0; i < sizeY; i+=OVERSAMPLE)
 		{
 		printf("│ ");
-			for (int j = 0; j < sizeX/2; ++j)
+			for (int j = 0; j < sizeX; j+=OVERSAMPLE)
 			{
-				state_t sum = states_data[svec_length*k +  i   *sizeX + j  ] +
-				              states_data[svec_length*k + (i+1)*sizeX + j+1] +
-				              states_data[svec_length*k + (i+1)*sizeX + j  ] +
-				              states_data[svec_length*k +  i   *sizeX + j+1];
-				printf("\033[48;5;%3dm  \e[0m",232 + 10 + 2*sum);
+				int sum = 0;
+        for(int iov = 0; iov < OVERSAMPLE; iov++)
+        {
+          for(int jov = 0; jov < OVERSAMPLE; jov++)
+          {
+            sum+=states_data[svec_length*k + (i+iov)*sizeX + (j+jov)];
+          }
+        }
+				printf("\033[48;5;%3dm  \e[0m",242 + 8*sum/(OVERSAMPLE*OVERSAMPLE));
 			}
 			printf("\e[0m │\n");
 		}
 
 		printf("└");
-		for(int i = 0; i < 2*sizeX/2+2; i++) printf("─");
+		for(int i = 0; i < 2*sizeX/OVERSAMPLE+2; i++) printf("─");
 		printf("┘\n");
 
 		// Calculate mag on CPU (sum of every cell)
@@ -76,13 +81,13 @@ main ()
 		}
 
 		// Print data
-		printf("Iter: %d/%d\n", k, iter);
-		printf("Mag (GPU): %+5.4f\n", 2*(float)mag_data[k]/(sizeX*sizeY));
-		printf("Mag (CPU): %+5.4f\n", (float)sum/(sizeX*sizeY));
+		printf("Iter: %d/%d\n", k+1, iter);
+		printf("Mag (GPU): %+5.4f\n", (float)mag_data[k]/(sizeX*sizeY));
+		printf("Mag (CPU): %+5.4f %s\n", (float)sum/(sizeX*sizeY),(mag_data[k]==sum)?"OK ":"ERR");
 		printf("[");
 		for (int i = 0; i < 100; ++i)
 		{
-			printf("%c",(((float)i/100) < (0.5+(float)mag_data[k]/(sizeX*sizeY)))?'#':'-');
+			printf("%c",(((float)i/100) < (0.5+(float)mag_data[k]/(2*sizeX*sizeY)))?'#':'-');
 		}
 		printf("]\n");
 		printf("                                                  |\n");
@@ -94,7 +99,7 @@ main ()
 			break;
 		}
 
-		usleep(1000000/30); // 1e6/fps
+		usleep(1000000/50); // ~1e6/fps
 	}
 
 	ising_profile();

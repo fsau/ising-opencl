@@ -1,8 +1,13 @@
-#define sizeY 256
-#define sizeX 256
-#define iter 256 // number of iteration to calculate each cycle
-#define neight_count 4
-#define pbuff_size 5
+#define sizeY 64
+#define sizeX 64
+#define iter 2048 // number of iteration to calculate each cycle
+#define prob_length 5 // num of neighborhood+1
+#define prob_buff 128 // prob buffer size when using multiple probs
+
+#define OVERSAMPLE 1
+
+#define prob_zero ((prob_length-1)/2)
+#define max_prob 1.0
 
 #define svec_length (sizeX*sizeY)
 
@@ -17,7 +22,9 @@ typedef cl_char4 state_v;
 #define max(x,y) ((x)>(y)?(x):(y))
 
 // Index macro for 2D -> 1D. f: fast, c: iteration counter
-#define ind(x,y) ( ((x)%sizeX)*sizeX + ((y)%sizeY) )
+// #define ind(x,y) ( ((x)%sizeX)*sizeX + ((y)%sizeY) )
+// #define cind(c,x,y) ( (c)*svec_length + ((x)%sizeX)*sizeX + ((y)%sizeY) )
+#define ind(x,y) ( ((x)*sizeX + (y))%(sizeX*sizeY) )
+#define cind(c,x,y) ( (c)*svec_length + ((x)*sizeX + (y))%(sizeX*sizeY) )
 #define find(x,y) ( (x)*sizeX + (y) )
-#define cind(c,x,y) ( (c)*svec_length + ((x)%sizeX)*sizeX + ((y)%sizeY) )
 #define cfind(c,x,y) ( (c)*svec_length + (x)*sizeX + (y) )
