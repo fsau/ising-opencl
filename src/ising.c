@@ -152,18 +152,18 @@ clh_build_program (cl_context ctx, cl_device_id dev, const char* filename)
 #define NUM_QUEUE 1
 
 // Ising OpenCL local variables
-cl_device_id device;
-cl_context context;
-cl_program program;
-cl_command_queue queue[NUM_QUEUE];
-cl_event *calc_done;
+static cl_device_id device;
+static cl_context context;
+static cl_program program;
+static cl_command_queue queue[NUM_QUEUE];
+static cl_event *calc_done;
 
-cl_mem rand_buff_g;
-cl_kernel kernel_rand;
-cl_event last_event;
+static cl_mem rand_buff_g;
+static cl_kernel kernel_rand;
+static cl_event last_event;
 
-int sys_count = 0;
-int sys_init = 0;
+static int sys_count = 0;
+static int sys_init = 0;
 
 // Initialize basic ising global structures, build program and random buffer
 int
